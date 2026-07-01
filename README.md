@@ -210,12 +210,12 @@ http://localhost:8000/docs
 
 # 🔐 Phase 2 — Authentication & User Profile
 
-- [ ] Registration endpoint (`/auth/register`)
-- [ ] Login endpoint (`/auth/login`)
-- [ ] Password hashing
-- [ ] JWT authentication
-- [ ] `/me` endpoint
-- [ ] Protect routes with `get_current_user`
+- [x] Registration endpoint (`/auth/register`)
+- [x] Login endpoint (`/auth/login`)
+- [x] Password hashing
+- [x] JWT authentication
+- [x] `/me` endpoint
+- [x] Protect routes with `get_current_user`
 
 ---
 
@@ -223,17 +223,17 @@ http://localhost:8000/docs
 
 ### Implement `llm_service.py`
 
-- [ ] `generate_reply(message, niveau_cecrl, historique)`
-- [ ] `correct_message(message)`
+- [x] `generate_reply(message, niveau_cecrl, historique)`
+- [x] `correct_message(message)`
 
 ### Tasks
 
-- [ ] Design the system prompt
-- [ ] Adapt conversations to CEFR level
-- [ ] Save conversations
-- [ ] Save corrections
-- [ ] Return conversation history
-- [ ] Manage conversation context
+- [x] Design the system prompt
+- [x] Adapt conversations to CEFR level
+- [x] Save conversations
+- [x] Save corrections
+- [x] Return conversation history
+- [x] Manage conversation context
 
 ---
 
