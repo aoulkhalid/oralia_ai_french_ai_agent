@@ -13,7 +13,7 @@
 
 # 📖 Overview
 
-French AI Agent is an intelligent language-learning platform designed for French learners from **A1 to C2**.
+French AI Agent ( oralia ai ) is an intelligent language-learning platform designed for French learners from **A1 to C2**.
 
 Unlike traditional language-learning applications, French AI Agent allows users to practice real conversations with an AI tutor that:
 
@@ -61,7 +61,7 @@ Unlike traditional language-learning applications, French AI Agent allows users 
 ## AI Services
 
 - OpenAI GPT
-- Anthropic Claude (optional)
+- Anthropic Claude 
 - Whisper
 - OpenAI TTS / ElevenLabs
 
