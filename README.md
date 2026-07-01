@@ -201,10 +201,10 @@ http://localhost:8000/docs
 
 # 🗄️ Phase 1 — Complete Database
 
-- [ ] Model remaining tables: conversations, messages, corrections, progress, exercises, scenarios
-- [ ] Define relationships between tables
-- [ ] Install and configure Alembic
-- [ ] Generate and apply migrations
+- [x] Model remaining tables: conversations, messages, corrections, progress, exercises, scenarios
+- [x] Define relationships between tables
+- [x] Install and configure Alembic
+- [x] Generate and apply migrations
 
 ---
 
