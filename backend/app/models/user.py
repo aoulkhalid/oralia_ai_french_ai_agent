@@ -8,5 +8,6 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     nom = Column(String, nullable=True)
-    niveau_cecrl = Column(String, default="A1")  # A1, A2, B1, B2, C1, C2
+    hashed_password = Column(String, nullable=False)
+    niveau_cecrl = Column(String, default="A1")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
