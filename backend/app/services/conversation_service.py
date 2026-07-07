@@ -4,6 +4,7 @@ sauvegarde des messages et corrections, historique, mise à jour de
 la progression de l'utilisateur.
 """
 
+import json
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -35,7 +36,9 @@ def get_or_create_conversation(
         if conversation:
             return conversation
 
-    conversation = Conversation(user_id=user.id, niveau_cecrl=user.niveau_cecrl)
+    # NB : Conversation n'a plus de colonne niveau_cecrl (le niveau est
+    # toujours lu depuis l'utilisateur, cf. llm_service.generate_reply).
+    conversation = Conversation(user_id=user.id)
     db.add(conversation)
     db.commit()
     db.refresh(conversation)
@@ -55,13 +58,13 @@ def get_recent_history(
         .all()
     )
     messages.reverse()
-    return [{"role": m.role, "content": m.content} for m in messages]
+    return [{"role": m.role, "content": m.contenu} for m in messages]
 
 
 def save_message(
     db: Session, conversation: Conversation, role: str, content: str
 ) -> Message:
-    message = Message(conversation_id=conversation.id, role=role, content=content)
+    message = Message(conversation_id=conversation.id, role=role, contenu=content)
     db.add(message)
     db.commit()
     db.refresh(message)
@@ -76,10 +79,10 @@ def save_corrections(
     for err in correction_data.get("erreurs", []):
         correction = Correction(
             message_id=message.id,
-            erreur_originale=err.get("erreur_originale", ""),
-            texte_corrige=err.get("texte_corrige", ""),
+            erreur=err.get("erreur", ""),
+            correction=err.get("correction", ""),
             explication=err.get("explication"),
-            type_erreur=err.get("type_erreur"),
+            categorie=err.get("categorie"),
         )
         db.add(correction)
         corrections.append(correction)
@@ -95,28 +98,42 @@ def update_progress(
     db: Session,
     user: User,
     nb_new_corrections: int,
-    types_erreurs: list[str | None],
+    categories_erreurs: list[str | None],
 ) -> Progress:
-    """Met à jour le tableau de bord de progression après un échange."""
+    """Met à jour le tableau de bord de progression après un échange.
+
+    NB : `erreurs_frequentes` est une colonne String (JSON sérialisé en
+    texte), pas une colonne JSON native : on doit donc json.loads/json.dumps
+    nous-mêmes.
+    """
     progress = db.query(Progress).filter(Progress.user_id == user.id).first()
     if not progress:
-        progress = Progress(user_id=user.id, niveau_actuel=user.niveau_cecrl)
+        progress = Progress(user_id=user.id, niveau_estime=user.niveau_cecrl)
         db.add(progress)
+        db.commit()
+        db.refresh(progress)
 
-    progress.total_messages = (progress.total_messages or 0) + 1
-    progress.total_corrections = (progress.total_corrections or 0) + nb_new_corrections
+    frequences: dict[str, int] = {}
+    if progress.erreurs_frequentes:
+        try:
+            existing = json.loads(progress.erreurs_frequentes)
+            frequences = {e["categorie"]: e["count"] for e in existing}
+        except (json.JSONDecodeError, TypeError, KeyError):
+            frequences = {}
 
-    frequences = {e["type"]: e["count"] for e in (progress.erreurs_frequentes or [])}
-    for type_erreur in types_erreurs:
-        if not type_erreur:
+    for categorie in categories_erreurs:
+        if not categorie:
             continue
-        frequences[type_erreur] = frequences.get(type_erreur, 0) + 1
+        frequences[categorie] = frequences.get(categorie, 0) + 1
 
-    progress.erreurs_frequentes = sorted(
-        [{"type": t, "count": c} for t, c in frequences.items()],
-        key=lambda x: x["count"],
-        reverse=True,
+    progress.erreurs_frequentes = json.dumps(
+        sorted(
+            [{"categorie": c, "count": n} for c, n in frequences.items()],
+            key=lambda x: x["count"],
+            reverse=True,
+        )
     )
+    progress.niveau_estime = progress.niveau_estime or user.niveau_cecrl
 
     db.commit()
     db.refresh(progress)

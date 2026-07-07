@@ -9,5 +9,7 @@ class Progress(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     niveau_estime = Column(String, nullable=True)
     conversations_completees = Column(Integer, default=0)
-    erreurs_frequentes = Column(String, nullable=True)  # JSON stocké en texte, ou passer à JSONB plus tard
+    # JSON stocké en texte (colonne String) : on sérialise/désérialise
+    # nous-mêmes avec json.dumps / json.loads dans conversation_service.py.
+    erreurs_frequentes = Column(String, nullable=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

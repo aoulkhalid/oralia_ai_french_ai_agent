@@ -1,6 +1,6 @@
 """
 Service responsable de la génération de réponses conversationnelles
-et des corrections grammaticales via un LLM (OpenAI).
+et des corrections grammaticales via l'API Gemini (Google).
 
 - generate_reply(message, niveau_cecrl, historique) -> str
 - correct_message(message) -> dict
@@ -9,10 +9,11 @@ et des corrections grammaticales via un LLM (OpenAI).
 import json
 import os
 
-from openai import OpenAI
+from google import genai
+from google.genai import types
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ---------------------------------------------------------------------------
 # Adaptation au niveau CECRL
@@ -71,17 +72,25 @@ def build_system_prompt(niveau_cecrl: str) -> str:
     )
 
 
-def _build_messages(
-    message: str, niveau_cecrl: str, historique: list[dict]
-) -> list[dict]:
-    messages = [{"role": "system", "content": build_system_prompt(niveau_cecrl)}]
+def _build_contents(message: str, historique: list[dict]) -> list[types.Content]:
+    """Convertit l'historique (roles user/assistant) au format de contenus
+    attendu par l'API Gemini (roles user/model)."""
+    contents: list[types.Content] = []
     for h in historique:
         role = h.get("role")
         if role not in ("user", "assistant"):
             continue
-        messages.append({"role": role, "content": h.get("content", "")})
-    messages.append({"role": "user", "content": message})
-    return messages
+        gemini_role = "model" if role == "assistant" else "user"
+        contents.append(
+            types.Content(
+                role=gemini_role,
+                parts=[types.Part.from_text(text=h.get("content", ""))],
+            )
+        )
+    contents.append(
+        types.Content(role="user", parts=[types.Part.from_text(text=message)])
+    )
+    return contents
 
 
 def generate_reply(
@@ -98,15 +107,17 @@ def generate_reply(
                     (contexte de la conversation, du plus ancien au plus récent)
     """
     historique = historique or []
-    messages = _build_messages(message, niveau_cecrl, historique)
 
-    response = client.chat.completions.create(
+    response = _client.models.generate_content(
         model=MODEL,
-        messages=messages,
-        temperature=0.7,
-        max_tokens=300,
+        contents=_build_contents(message, historique),
+        config=types.GenerateContentConfig(
+            system_instruction=build_system_prompt(niveau_cecrl),
+            temperature=0.7,
+            max_output_tokens=300,
+        ),
     )
-    return response.choices[0].message.content.strip()
+    return (response.text or "").strip()
 
 
 # ---------------------------------------------------------------------------
@@ -123,10 +134,10 @@ Réponds STRICTEMENT en JSON avec ce format, sans texte autour :
   "has_errors": true|false,
   "erreurs": [
     {
-      "erreur_originale": "extrait fautif exact",
-      "texte_corrige": "version corrigée de cet extrait",
+      "erreur": "extrait fautif exact",
+      "correction": "version corrigée de cet extrait",
       "explication": "explication courte et pédagogique en français",
-      "type_erreur": "grammaire" | "conjugaison" | "orthographe" | "accord" | "vocabulaire"
+      "categorie": "grammaire" | "conjugaison" | "orthographe" | "accord" | "vocabulaire"
     }
   ]
 }
@@ -145,28 +156,26 @@ def correct_message(message: str) -> dict:
         "has_errors": bool,
         "erreurs": [
             {
-                "erreur_originale": str,
-                "texte_corrige": str,
+                "erreur": str,
+                "correction": str,
                 "explication": str,
-                "type_erreur": str,
+                "categorie": str,
             },
             ...
         ],
     }
     """
-    messages = [
-        {"role": "system", "content": CORRECTION_SYSTEM_PROMPT},
-        {"role": "user", "content": message},
-    ]
-
-    response = client.chat.completions.create(
+    response = _client.models.generate_content(
         model=MODEL,
-        messages=messages,
-        temperature=0,
-        response_format={"type": "json_object"},
+        contents=message,
+        config=types.GenerateContentConfig(
+            system_instruction=CORRECTION_SYSTEM_PROMPT,
+            temperature=0,
+            response_mime_type="application/json",
+        ),
     )
 
-    raw = response.choices[0].message.content
+    raw = response.text
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, TypeError):

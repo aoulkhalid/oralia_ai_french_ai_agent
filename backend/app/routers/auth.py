@@ -41,7 +41,8 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
 
     # Initialise le tableau de bord de progression associé
-    progress = Progress(user_id=user.id, niveau_actuel=user.niveau_cecrl)
+    # (Progress.niveau_estime remplace l'ancien Progress.niveau_actuel)
+    progress = Progress(user_id=user.id, niveau_estime=user.niveau_cecrl)
     db.add(progress)
     db.commit()
 

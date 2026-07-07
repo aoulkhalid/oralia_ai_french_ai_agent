@@ -6,6 +6,8 @@ from app.schemas.chat import (
     CorrectionOut,
     MessageOut,
     ConversationOut,
+    TranscriptionOut,
+    TextToSpeechIn,
 )
 
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "CorrectionOut",
     "MessageOut",
     "ConversationOut",
+    "TranscriptionOut",
+    "TextToSpeechIn",
 ]

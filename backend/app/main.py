@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health, chat, progress, auth
+from app.routers import health, chat, progress, auth, speech
 
 app = FastAPI(
     title="Agent IA - Apprentissage du Français",
@@ -22,6 +22,7 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(progress.router)
+app.include_router(speech.router)
 
 
 @app.get("/")

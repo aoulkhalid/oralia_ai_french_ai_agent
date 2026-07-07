@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -26,9 +28,16 @@ def get_progress(
     if not progress:
         raise HTTPException(status_code=404, detail="Progression introuvable.")
 
+    try:
+        erreurs_frequentes = (
+            json.loads(progress.erreurs_frequentes) if progress.erreurs_frequentes else []
+        )
+    except (json.JSONDecodeError, TypeError):
+        erreurs_frequentes = []
+
     return {
         "user_id": user_id,
-        "niveau_actuel": progress.niveau_actuel,
+        "niveau_estime": progress.niveau_estime,
         "conversations_completees": progress.conversations_completees,
-        "erreurs_frequentes": progress.erreurs_frequentes or [],
+        "erreurs_frequentes": erreurs_frequentes,
     }

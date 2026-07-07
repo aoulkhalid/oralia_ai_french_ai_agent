@@ -13,10 +13,13 @@ class ChatMessageIn(BaseModel):
 class CorrectionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    erreur_originale: str
-    texte_corrige: str
+    # Alignés avec les colonnes réelles du modèle Correction
+    # (erreur / correction / categorie), pas les anciens noms
+    # erreur_originale / texte_corrige / type_erreur.
+    erreur: str
+    correction: str
     explication: str | None = None
-    type_erreur: str | None = None
+    categorie: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -32,7 +35,7 @@ class MessageOut(BaseModel):
 
     id: int
     role: str
-    content: str
+    contenu: str
     created_at: datetime
     corrections: list[CorrectionOut] = []
 
@@ -42,6 +45,17 @@ class ConversationOut(BaseModel):
 
     id: int
     titre: str | None = None
-    niveau_cecrl: str
-    started_at: datetime
+    created_at: datetime
     ended_at: datetime | None = None
+
+
+class TranscriptionOut(BaseModel):
+    """Réponse de POST /speech/speech-to-text."""
+
+    text: str
+
+
+class TextToSpeechIn(BaseModel):
+    """Payload pour POST /speech/text-to-speech."""
+
+    text: str

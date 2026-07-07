@@ -3,11 +3,11 @@ uvicorn[standard]==0.30.6
 sqlalchemy==2.0.35
 psycopg2-binary==2.9.9
 python-dotenv==1.0.1
-pydantic==2.9.2
-pydantic[email]==2.9.2
+pydantic==2.12.5
+pydantic[email]==2.12.5
 alembic==1.13.2
 redis==5.0.8
-openai==1.51.0
+google-genai==2.10.0
 
 # Auth
 bcrypt==4.2.0

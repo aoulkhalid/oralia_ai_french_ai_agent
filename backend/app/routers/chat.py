@@ -55,7 +55,7 @@ def send_message(
         db,
         current_user,
         nb_new_corrections=len(corrections),
-        types_erreurs=[c.type_erreur for c in corrections],
+        categories_erreurs=[c.categorie for c in corrections],
     )
 
     return ChatResponse(
@@ -73,7 +73,7 @@ def list_conversations(
     return (
         db.query(Conversation)
         .filter(Conversation.user_id == current_user.id)
-        .order_by(Conversation.started_at.desc())
+        .order_by(Conversation.created_at.desc())
         .all()
     )
 

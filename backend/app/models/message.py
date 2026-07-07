@@ -13,4 +13,10 @@ class Message(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     conversation = relationship("Conversation", back_populates="messages")
-    correction = relationship("Correction", back_populates="message", uselist=False, cascade="all, delete-orphan")
+    # Un message utilisateur peut contenir plusieurs erreurs -> plusieurs
+    # Correction. (La contrainte unique sur corrections.message_id, qui
+    # limitait à une seule correction par message, est supprimée par la
+    # migration 0004.)
+    corrections = relationship(
+        "Correction", back_populates="message", cascade="all, delete-orphan"
+    )

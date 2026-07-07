@@ -29,9 +29,9 @@ Unlike traditional language-learning applications, French AI Agent allows users 
 
 # ✨ Features
 
-- AI French Conversation
-- Speech-to-Text (Whisper)
-- Text-to-Speech
+- AI French Conversation (Gemini)
+- Speech-to-Text (Gemini audio understanding)
+- Text-to-Speech (Gemini TTS)
 - Grammar Correction
 - Personalized Feedback
 - Conversation History
@@ -49,7 +49,6 @@ Unlike traditional language-learning applications, French AI Agent allows users 
 - Next.js
 - React
 - TypeScript
-- TailwindCSS
 
 ## Backend
 
@@ -60,10 +59,7 @@ Unlike traditional language-learning applications, French AI Agent allows users 
 
 ## AI Services
 
-- OpenAI GPT
-- Anthropic Claude 
-- Whisper
-- OpenAI TTS / ElevenLabs
+- Google Gemini (chat, grammar correction, speech-to-text, text-to-speech)
 
 ## Database
 
@@ -102,7 +98,7 @@ french-ai-agent/
 ├── frontend/
 │   ├── app/
 │   ├── components/
-│   ├── public/
+│   ├── lib/
 │   └── package.json
 │
 ├── docker-compose.yml
@@ -131,31 +127,58 @@ Create your environment files.
 Backend
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
-Configure your API keys.
+Configure your Gemini API key (get one at https://aistudio.google.com/apikey):
 
 ```env
-OPENAI_API_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_TTS_MODEL=gemini-2.5-flash-preview-tts
+GEMINI_TTS_VOICE=Kore
 
-ANTHROPIC_API_KEY=
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/francais_ia
+REDIS_URL=redis://localhost:6379/0
 
-ELEVENLABS_API_KEY=
+SECRET_KEY=
+```
 
-DATABASE_URL=
+Frontend
 
-REDIS_URL=
-
-JWT_SECRET=
+```bash
+cp frontend/.env.local.example frontend/.env.local
 ```
 
 ---
 
-## Run with Docker
+## Run the database + cache
 
 ```bash
-docker compose up --build
+docker compose up -d
+```
+
+## Run migrations
+
+```bash
+cd backend
+python -m venv venv && source venv/bin/activate   # ou l'équivalent Windows
+pip install -r requirements.txt
+alembic upgrade head
+```
+
+## Run the backend
+
+```bash
+uvicorn app.main:app --reload
+```
+
+## Run the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
@@ -177,10 +200,6 @@ Swagger
 ```
 http://localhost:8000/docs
 ```
-
----
-
-# 🗺️ Development Roadmap
 
 ---
 
@@ -221,7 +240,7 @@ http://localhost:8000/docs
 
 # 🤖 Phase 3 — Conversational Core (LLM)
 
-### Implement `llm_service.py`
+### Implement `llm_service.py` (Gemini)
 
 - [x] `generate_reply(message, niveau_cecrl, historique)`
 - [x] `correct_message(message)`
@@ -239,32 +258,31 @@ http://localhost:8000/docs
 
 # 🎙️ Phase 4 — Voice (STT / TTS)
 
-- [ ] Implement `stt_service.py`
-- [ ] Endpoint `/speech-to-text`
-- [ ] Implement `tts_service.py`
-- [ ] Endpoint `/text-to-speech`
-- [ ] Frontend audio recording and playback
+- [x] Implement `stt_service.py` (Gemini audio understanding)
+- [x] Endpoint `/speech/speech-to-text`
+- [x] Implement `tts_service.py` (Gemini TTS)
+- [x] Endpoint `/speech/text-to-speech`
+- [x] Frontend audio recording and playback
 
 ---
 
 # 💬 Phase 5 — Chat Interface
 
-- [ ] ChatWindow component
-- [ ] Send messages through `/chat`
-- [ ] Microphone recording
-- [ ] Speech-to-Text integration
-- [ ] Audio playback
-- [ ] Display grammar corrections
-- [ ] Loading state
-- [ ] Network error handling
+- [x] ChatWindow component
+- [x] Send messages through `/chat`
+- [x] Microphone recording
+- [x] Speech-to-Text integration
+- [x] Audio playback
+- [x] Display grammar corrections
+- [x] Loading state
+- [x] Network error handling
 
 ---
 
 # 📈 Phase 6 — Progress & Statistics
 
-- [ ] Compute learning statistics
-- [ ] Populate `progress` table
-- [ ] Progress dashboard
+- [x] Populate `progress` table
+- [ ] Progress dashboard (UI)
 - [ ] Charts for frequent mistakes
 - [ ] CEFR progression
 
@@ -301,11 +319,16 @@ http://localhost:8000/docs
 | Method | Endpoint | Description |
 |----------|----------|-------------|
 | GET | `/health` | Health check |
+| POST | `/auth/register` | Create an account |
+| POST | `/auth/login` | Log in, get a JWT |
+| GET | `/auth/me` | Current user profile |
 | POST | `/chat` | Chat with the AI |
-| POST | `/speech-to-text` | Audio → Text |
-| POST | `/text-to-speech` | Text → Audio |
-| GET | `/progress` | User statistics |
-| POST | `/exercise` | Generate exercises |
+| GET | `/chat/conversations` | List conversations |
+| GET | `/chat/{id}/history` | Conversation history |
+| POST | `/chat/{id}/close` | Close a conversation |
+| POST | `/speech/speech-to-text` | Audio → Text |
+| POST | `/speech/text-to-speech` | Text → Audio |
+| GET | `/progress/{user_id}` | User statistics |
 
 ---
 
@@ -327,6 +350,7 @@ http://localhost:8000/docs
          │             │             │
 
       LLM Service   STT Service   TTS Service
+       (Gemini)      (Gemini)      (Gemini)
 
          │             │             │
 
