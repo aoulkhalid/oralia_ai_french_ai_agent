@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définissez POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-francais_ia}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+    networks:
+      - francais_ia_net
+    # Pas de port exposé à l'hôte en production : seul le backend, sur le
+    # même réseau Docker, a besoin d'accéder à Postgres.
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+    networks:
+      - francais_ia_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-francais_ia}
+      REDIS_URL: redis://redis:6379/0
+      LOG_FORMAT: json
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: always
+    networks:
+      - francais_ia_net
+    # Pas de port publié directement : en prod, un reverse proxy (Nginx,
+    # Caddy, Traefik) devant ce service gère le TLS et le nom de domaine.
+    # Voir DEPLOYMENT.md.
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:?Définissez PUBLIC_API_URL (ex: https://api.mondomaine.com)}
+    environment:
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - francais_ia_net
+
+  # Reverse proxy minimal : termine le TLS et route mondomaine.com vers le
+  # frontend, api.mondomaine.com vers le backend. Remplacez par votre
+  # config réelle (voir DEPLOYMENT.md pour Caddy/Nginx/Traefik).
+  # Décommentez et adaptez si vous gérez vous-même le reverse proxy ici
+  # plutôt qu'au niveau de l'hébergeur (Railway/Render le gèrent pour vous).
+  #
+  # caddy:
+  #   image: caddy:2
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile
+  #     - caddy_data:/data
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   restart: always
+  #   networks:
+  #     - francais_ia_net
+
+volumes:
+  postgres_data:
+  # caddy_data:
+
+networks:
+  francais_ia_net:
+    driver: bridge

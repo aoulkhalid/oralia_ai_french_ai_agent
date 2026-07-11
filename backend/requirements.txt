@@ -1,0 +1,29 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+pydantic[email]==2.9.2
+pydantic-settings==2.5.2
+alembic==1.13.2
+redis==5.0.8
+
+# LLM (DeepSeek, via le SDK OpenAI-compatible)
+openai==1.57.4
+tenacity==8.5.0
+
+# Speech-to-Text (local, sans clé API)
+faster-whisper==1.0.3
+requests==2.32.3
+
+# Text-to-Speech (Microsoft Edge, gratuit, sans clé API)
+# NB : Microsoft change périodiquement son mécanisme d'authentification
+# interne, ce qui casse les anciennes versions d'edge-tts (erreur 403 sur
+# le WebSocket). Non figé sur une version exacte : si le TTS renvoie une
+# erreur 403/WSServerHandshakeError, faites `pip install --upgrade edge-tts`.
+edge-tts>=6.1.19
+
+# Auth
+bcrypt==4.2.0
+pyjwt==2.9.0
+python-multipart==0.0.9
